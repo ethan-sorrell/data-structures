@@ -72,9 +72,9 @@ extern int makeSET(SET *d,void *value)
     int index = sizeCDA(d->list);
 
     //DEBUG
-    printf("inserting ");
-    d->display(stdout, value);
-    printf("\n");
+    // printf("inserting ");
+    // d->display(stdout, value);
+    // printf("\n");
 
     // make node
     NODE *nodeVal = malloc(sizeof(NODE));
@@ -94,7 +94,7 @@ extern int findSET(SET *d,int index)
 
     if(index != parent)
         nodeVal->parent = findSET(d, parent);
-    return parent;
+    return nodeVal->parent;
 }
 extern int unionSET(SET *d,int index1,int index2)
 {
