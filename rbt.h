@@ -17,5 +17,6 @@ extern int sizeRBT(RBT *);
 extern int wordsRBT(RBT *);
 extern void statisticsRBT(FILE *,RBT *);
 extern void displayRBT(FILE *,RBT *);
+extern QUEUE *getNodeList(RBT *);
 
 #endif

@@ -42,6 +42,16 @@ typedef struct rbtvalue
 
 
 /****************** private function ******************/
+void addInorder(QUEUE *list, BSTNODE *node)
+{
+    if(getLeft(node) != NULL)
+        addInorder(list, getLeft(node));
+
+    enqueue(list, ((RBTVALUE*)getBSTNODE(node))->value);
+
+    if(getRight(node) != NULL)
+        addInorder(list, getRight(node));
+}
 
 BSTNODE *getUncle(BSTNODE *node)
 {
@@ -549,3 +559,12 @@ extern void displayRBT(FILE *fp,RBT *rbt)
             fprintf(fp, "r");
     }
 }
+QUEUE *getNodeList(RBT *t)
+{
+    QUEUE *list = newQUEUE(NULL);
+    BSTNODE *root = getBSTroot(t->tree);
+    addInorder(list, root);
+    return list;
+}
+
+
