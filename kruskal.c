@@ -22,7 +22,7 @@ typedef struct vertex
 {
     int val;
     int index;
-    CDA *adj;
+    int adj;
 } VERTEX;
 
 // -----------------
@@ -34,7 +34,7 @@ VERTEX *makeVERTEX(int val, int index)
     VERTEX *v = malloc(sizeof(VERTEX));
     v->val = val;
     v->index = index;
-    v->adj = newCDA(NULL);
+    v->adj = 0;
     return v;
 }
 void debugDisplay(FILE *fp, void *a)
@@ -287,7 +287,8 @@ int main(int argc, char **argv)
            findSET(adjacencyForest, fromIndex))
         {
                 insertCDAback(MST, e);
-                insertCDAback(fromVertex->adj, toVertex);
+                fromVertex->adj += 1;
+                toVertex->adj += 1;
                 unionSET(adjacencyForest, toIndex, fromIndex);
         }
     }
@@ -320,6 +321,12 @@ int main(int argc, char **argv)
             if(findSET(adjacencyForest, treeRep)
                != findSET(adjacencyForest, fromIndex))
             {
+                searchVertex->val = walk->from;
+                fromVertex = findRBT(vertexList, searchVertex);
+                searchVertex->val = walk->to;
+                toVertex = findRBT(vertexList, searchVertex);
+                if(toVertex->adj == 1 && fromVertex->adj == 1)
+                    continue;
                 printf("\ntotal weight: %d\n----\n", weight);
 
                 // new tree
