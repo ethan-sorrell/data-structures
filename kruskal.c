@@ -56,13 +56,47 @@ int getWeight(CDA *edgeList, int index)
     EDGE *e = getCDA(edgeList, index);
     return e->weight;
 }
+
+int getOrigin(CDA *edgeList, int index)
+{
+    EDGE *e = getCDA(edgeList, index);
+    return e->from;
+}
+
+int getTermination(CDA *edgeList, int index)
+{
+    EDGE *e = getCDA(edgeList, index);
+    return e->to;
+}
 // void setWeight(CDA *edgeList, int index, int x)
 // {
 // EDGE *e = getCDA(edgeList, index);
 // e->weight = x;
 // }
+int partitionOrigin(CDA *A, int start, int end)
+{
+    int x = getOrigin(A, end);
+    int i = start - 1;
+    EDGE* temp;
+    int j;
 
-int partition(CDA *A, int start, int end)
+    for(j = start; j < end; j++)
+    {
+        if(getOrigin(A, j) < x || (getOrigin(A, j) == x && getTermination(A, j) < getTermination(A, end)) )
+        {
+            i += 1;
+            temp = getCDA(A, j);
+            setCDA(A, j, getCDA(A, i));
+            setCDA(A, i, temp);
+        }
+    }
+    temp = getCDA(A, end);
+    setCDA(A, end, getCDA(A, i+1));
+    setCDA(A, i+1, temp);
+    return i+1;
+}
+
+int partitionWeight(CDA *A, int start, int end)
 {
     int x = getWeight(A, end);
     int i = start - 1;
@@ -85,13 +119,23 @@ int partition(CDA *A, int start, int end)
     return i+1;
 }
 
-void quicksort(CDA *A, int start, int end)
+void quicksortOrigin(CDA *A, int start, int end)
 {
     if(start < end)
     {
-        int pivot = partition(A, start, end);
-        quicksort(A, start  , pivot-1);
-        quicksort(A, pivot+1, end    );
+        int pivot = partitionOrigin(A, start, end);
+        quicksortOrigin(A, start  , pivot-1);
+        quicksortOrigin(A, pivot+1, end    );
+    }
+}
+
+void quicksortWeight(CDA *A, int start, int end)
+{
+    if(start < end)
+    {
+        int pivot = partitionWeight(A, start, end);
+        quicksortWeight(A, start  , pivot-1);
+        quicksortWeight(A, pivot+1, end    );
     }
 }
 
@@ -108,14 +152,16 @@ int main(int argc, char **argv)
         return 1;
     }
     // DEBUG
-    printf("%s\n", argv[1]);
+    // printf("%s\n", argv[1]);
     FILE *graphFile = fopen(argv[1], "r");
 
     CDA *edgeList = newCDA(NULL);
     RBT *vertexList = newRBT(debugDisplay, compare);
     SET *adjacencyForest = newSET(edgeDisplay);
+    SET *levelForest = newSET(edgeDisplay);
     int index = 0;
     int temp;
+    int i;
     VERTEX *v;
 
     // read edge list and infer vertex list
@@ -130,6 +176,7 @@ int main(int argc, char **argv)
         itoken = malloc(sizeof(int));
         *itoken = atoi(token);
         temp = makeSET(adjacencyForest, itoken);
+        temp = makeSET(levelForest, itoken);
         v = makeVERTEX(e->from, temp);
         insertRBT(vertexList, v);
 
@@ -140,8 +187,17 @@ int main(int argc, char **argv)
         itoken = malloc(sizeof(int));
         *itoken = atoi(token);
         temp = makeSET(adjacencyForest, itoken);
+        temp = makeSET(levelForest, itoken);
         v = makeVERTEX(e->to, temp);
         insertRBT(vertexList, v);
+
+        // FIXME
+        if(e->from > e->to)
+        {
+            temp = e->from;
+            e->from = e->to;
+            e->to = temp;
+        }
 
         token = readToken(graphFile);
         if(*token == ';')
@@ -150,7 +206,7 @@ int main(int argc, char **argv)
         {
             e->weight = atoi(token);
             // DEBUG
-            printf("weight %s\n", token);
+            // printf("weight %s\n", token);
             token = readToken(graphFile);
         }
 
@@ -161,16 +217,18 @@ int main(int argc, char **argv)
     // displayRBT(stdout, vertexList);
 
     // DEBUG 
-    int i;
+    /*
     for(i = 0; i < sizeCDA(edgeList); i++)
     {
         EDGE *walk = ((EDGE*)getCDA(edgeList, i));
         printf("%d(%d)%d\n", walk->to, walk->from, walk->weight);
     }
     printf("end pre-sorted edge list\n");
+    */
 
-    // sort edge list
-    quicksort(edgeList, 0, index-1);
+    // sort edge list by origin then weight
+    quicksortOrigin(edgeList, 0, index-1);
+    quicksortWeight(edgeList, 0, index-1);
 
     /*
     // DEBUG 
@@ -220,15 +278,70 @@ int main(int argc, char **argv)
     }
     free(searchVertex);
 
+    quicksortOrigin(MST, 0, sizeCDA(MST)-1);
+
+
+    // Display MST
+
+    // TODO
+    // empty graph?
+    EDGE *walk = ((EDGE*)getCDA(MST, 0));
+    int rep = walk->from;
+    int level = 0;
+    int levelRep = walk->to;
+    int treeRep = rep;
+    int weight = 0;
+
+    printf("%d : %d", level++, walk->from);
+    printf("\n%d :", level++);
+
+    for(i = 0; i < sizeCDA(MST); i++)
+    {
+        walk = ((EDGE*)getCDA(MST, i));
+        if(findSET(levelForest, walk->from) != findSET(levelForest, rep))
+        {
+            if(findSET(adjacencyForest, treeRep)
+               != findSET(adjacencyForest, walk->from))
+            {
+                printf("\ntotal weight: %d\n----\n", weight);
+
+                // new tree
+                rep = walk->from;
+                level = 0;
+                levelRep = walk->to;
+                treeRep = rep;
+                weight = 0;
+
+                printf("%d : %d", level++, walk->from);
+                printf("\n%d :", level++);
+            }
+            else
+            {
+            unionSET(levelForest, rep, walk->from);
+            levelRep = walk->to;
+
+            printf("\n%d :", level++);
+            }
+        }
+        else
+            unionSET(levelForest, walk->to, levelRep);
+
+        weight += ((EDGE*)getCDA(MST, i))->weight;
+        printf(" %d(%d)%d", walk->to, walk->from, walk->weight);
+    }
+    printf("\ntotal weight: %d\n----\n", weight);
+
+    /*
     // find and print total weight
     int weight = 0;
     for(i = 0; i < sizeCDA(MST); i++)
     {
-        EDGE *walk = ((EDGE*)getCDA(MST, i));
+        walk = ((EDGE*)getCDA(MST, i));
         printf("%d(%d)%d\n", walk->to, walk->from, walk->weight);
 
         weight += ((EDGE*)getCDA(MST, i))->weight;
     }
     printf("total weight: %d\n", weight);
+    */
     return 0;
 }
