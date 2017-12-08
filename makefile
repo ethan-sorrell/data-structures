@@ -1,4 +1,4 @@
-OBJS = cda.o queue.o bst.o kruskal.o rbt.o scanner.o set.o
+OBJS = cda.o queue.o bst.o kruskal.o rbt.o scanner.o set.o da.o
 OPTS = -Wall -Wextra -std=c99 -g
 
 kruskal : $(OBJS)
@@ -14,6 +14,9 @@ cda.o : cda.c cda.h
 
 bst.o : bst.c bst.h
 	gcc $(OPTS) -c bst.c
+
+da.o : da.c da.h
+	gcc $(OPTS) -c da.c
 
 rbt.o : rbt.c rbt.h
 	gcc $(OPTS) -c rbt.c

@@ -165,6 +165,14 @@ int partitionWeight(CDA *A, int start, int end)
             setCDA(A, j, getCDA(A, i));
             setCDA(A, i, temp);
         }
+        else if(getWeight(A, j) == x && getOrigin(A, j) == getOrigin(A, end)
+                && getTermination(A, j) < getTermination(A, end))
+        {
+            i += 1;
+            temp = getCDA(A, j);
+            setCDA(A, j, getCDA(A, i));
+            setCDA(A, i, temp);
+        }
     }
     temp = getCDA(A, end);
     setCDA(A, end, getCDA(A, i+1));
@@ -321,8 +329,6 @@ int main(int argc, char **argv)
     VERTEX *toVertex;
     int toIndex;
     int fromIndex;
-    int lastWeight;
-    CDA *eligbleEdges = newCDA(NULL);
     // while(index < size)
     for(index = 0; index < size; index++)
     {
