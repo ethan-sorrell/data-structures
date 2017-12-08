@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "set.h"
-#include "cda.h"
+#include "da.h"
 
 // -------
 // structs
@@ -16,7 +16,7 @@ typedef struct node
 struct set
 {
     void (*display)(FILE *, void*);
-    CDA *list;
+    DA *list;
     int count;
 };
 
@@ -26,8 +26,8 @@ struct set
 
 static void linkSET(SET *d,int index1,int index2)
 {
-    NODE *nodeVal1 = (NODE*)getCDA(d->list, index1);
-    NODE *nodeVal2 = (NODE*)getCDA(d->list, index2);
+    NODE *nodeVal1 = (NODE*)getDA(d->list, index1);
+    NODE *nodeVal2 = (NODE*)getDA(d->list, index2);
     if(nodeVal1->rank > nodeVal2->rank)
         nodeVal2->parent = index1;
     else if(nodeVal1->rank < nodeVal2->rank)
@@ -55,7 +55,7 @@ extern SET *newSET(void (*d)(FILE *,void *))
 {
     // allocate
     SET *this = malloc(sizeof(SET));
-    CDA *list = newCDA(NULL);
+    DA *list = newDA(NULL);
 
     // set
     this->display = d;
@@ -69,7 +69,7 @@ extern SET *newSET(void (*d)(FILE *,void *))
 }
 extern int makeSET(SET *d,void *value)
 {
-    int index = sizeCDA(d->list);
+    int index = sizeDA(d->list);
 
     //DEBUG
     // printf("inserting ");
@@ -82,14 +82,14 @@ extern int makeSET(SET *d,void *value)
     nodeVal->parent = index;
     nodeVal->rank = 0;
 
-    setCDA(d->list, index, nodeVal);
+    setDA(d->list, index, nodeVal);
     d->count += 1;
 
     return index;
 }
 extern int findSET(SET *d,int index)
 {
-    NODE *nodeVal = (NODE*)getCDA(d->list, index);
+    NODE *nodeVal = (NODE*)getDA(d->list, index);
     int parent = nodeVal->parent;
 
     if(index != parent)
@@ -113,10 +113,10 @@ extern int countSET(SET *d)
 extern int displaySET(FILE *fp,SET *d)
 {
     int i;
-    for(i = 0; i < sizeCDA(d->list); i++)
+    for(i = 0; i < sizeDA(d->list); i++)
     {
         fprintf(fp,"%d:", i);
-        NODE *nodeVal = (NODE*)getCDA(d->list, i);
+        NODE *nodeVal = (NODE*)getDA(d->list, i);
         int index = i;
 
         fprintf(fp, " ");
@@ -124,7 +124,7 @@ extern int displaySET(FILE *fp,SET *d)
         while(index != nodeVal->parent)
         {
             index = nodeVal->parent;
-            nodeVal = (NODE*)getCDA(d->list, index);
+            nodeVal = (NODE*)getDA(d->list, index);
             fprintf(fp, " ");
             d->display(fp, nodeVal->value);
         }
