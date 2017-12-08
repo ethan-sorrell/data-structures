@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "rbt.h"
 #include "cda.h"
 #include "set.h"
@@ -49,6 +50,19 @@ int compare(void *a, void *b)
 {
     // a and b will be vertices
     return ((VERTEX*)a)->val - ((VERTEX*)b)->val;
+}
+
+int getIndex(RBT *vertexList, VERTEX *searchVertex, int vertexNumber)
+{
+    searchVertex->val = vertexNumber;
+    VERTEX *foundVertex = (VERTEX*) findRBT(vertexList, searchVertex);
+    if(foundVertex != NULL)
+        return foundVertex->index;
+    else
+    {
+        fprintf(stderr, "Vertex %d not found\n", vertexNumber);
+        assert(0);
+    }
 }
 
 int getWeight(CDA *edgeList, int index)
@@ -205,6 +219,7 @@ int main(int argc, char **argv)
         else
         {
             e->weight = atoi(token);
+
             // DEBUG
             // printf("weight %s\n", token);
             token = readToken(graphFile);
@@ -276,7 +291,6 @@ int main(int argc, char **argv)
                 unionSET(adjacencyForest, toIndex, fromIndex);
         }
     }
-    free(searchVertex);
 
     quicksortOrigin(MST, 0, sizeCDA(MST)-1);
 
@@ -286,9 +300,9 @@ int main(int argc, char **argv)
     // TODO
     // empty graph?
     EDGE *walk = ((EDGE*)getCDA(MST, 0));
-    int rep = walk->from;
+    int rep = getIndex(vertexList, searchVertex, walk->from);
     int level = 0;
-    int levelRep = walk->to;
+    int levelRep = getIndex(vertexList, searchVertex, walk->to);
     int treeRep = rep;
     int weight = 0;
 
@@ -298,17 +312,20 @@ int main(int argc, char **argv)
     for(i = 0; i < sizeCDA(MST); i++)
     {
         walk = ((EDGE*)getCDA(MST, i));
-        if(findSET(levelForest, walk->from) != findSET(levelForest, rep))
+        fromIndex = getIndex(vertexList, searchVertex, walk->from);
+        toIndex = getIndex(vertexList, searchVertex, walk->to);
+
+        if(findSET(levelForest, fromIndex) != findSET(levelForest, rep))
         {
             if(findSET(adjacencyForest, treeRep)
-               != findSET(adjacencyForest, walk->from))
+               != findSET(adjacencyForest, fromIndex))
             {
                 printf("\ntotal weight: %d\n----\n", weight);
 
                 // new tree
-                rep = walk->from;
+                rep = fromIndex;
                 level = 0;
-                levelRep = walk->to;
+                levelRep = toIndex;
                 treeRep = rep;
                 weight = 0;
 
@@ -317,14 +334,14 @@ int main(int argc, char **argv)
             }
             else
             {
-            unionSET(levelForest, rep, walk->from);
-            levelRep = walk->to;
+            unionSET(levelForest, rep, fromIndex);
+            levelRep = toIndex;
 
             printf("\n%d :", level++);
             }
         }
         else
-            unionSET(levelForest, walk->to, levelRep);
+            unionSET(levelForest, toIndex, levelRep);
 
         weight += ((EDGE*)getCDA(MST, i))->weight;
         printf(" %d(%d)%d", walk->to, walk->from, walk->weight);
@@ -343,5 +360,6 @@ int main(int argc, char **argv)
     }
     printf("total weight: %d\n", weight);
     */
+    free(searchVertex);
     return 0;
 }
