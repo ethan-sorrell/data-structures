@@ -17,6 +17,7 @@ typedef struct edge
     int from;
     int to;
     int weight;
+    int visited;
 } EDGE;
 
 typedef struct vertex
@@ -29,6 +30,14 @@ typedef struct vertex
 // -----------------
 // private functions
 // -----------------
+
+void reverseEdge(EDGE *e)
+{
+    int temp;
+    temp = e->from;
+    e->from = e->to;
+    e->to = temp;
+}
 
 VERTEX *makeVERTEX(int val, int index)
 {
@@ -110,6 +119,28 @@ int partitionOrigin(CDA *A, int start, int end)
     setCDA(A, i+1, temp);
     return i+1;
 }
+int partitionTermination(CDA *A, int start, int end)
+{
+    int x = getTermination(A, end);
+    int i = start - 1;
+    EDGE* temp;
+    int j;
+
+    for(j = start; j < end; j++)
+    {
+        if(getTermination(A, j) < x)
+        {
+            i += 1;
+            temp = getCDA(A, j);
+            setCDA(A, j, getCDA(A, i));
+            setCDA(A, i, temp);
+        }
+    }
+    temp = getCDA(A, end);
+    setCDA(A, end, getCDA(A, i+1));
+    setCDA(A, i+1, temp);
+    return i+1;
+}
 
 int partitionWeight(CDA *A, int start, int end)
 {
@@ -144,6 +175,16 @@ void quicksortOrigin(CDA *A, int start, int end)
     }
 }
 
+void quicksortTermination(CDA *A, int start, int end)
+{
+    if(start < end)
+    {
+        int pivot = partitionTermination(A, start, end);
+        quicksortTermination(A, start  , pivot-1);
+        quicksortTermination(A, pivot+1, end    );
+    }
+}
+
 void quicksortWeight(CDA *A, int start, int end)
 {
     if(start < end)
@@ -168,6 +209,11 @@ int main(int argc, char **argv)
     }
     // DEBUG
     // printf("%s\n", argv[1]);
+    if(strcmp(argv[1], "-v") == 0)
+    {
+        printf("Ethan Sorrell\n");
+        return 0;
+    }
     FILE *graphFile = fopen(argv[1], "r");
 
     CDA *edgeList = newCDA(NULL);
@@ -185,6 +231,7 @@ int main(int argc, char **argv)
     while(token != NULL)
     {
         EDGE *e = malloc(sizeof(EDGE));
+        e->visited = 0;
         e->from = atoi(token);
         // DEBUG
         // printf("from %s\n", token);
@@ -247,7 +294,7 @@ int main(int argc, char **argv)
     quicksortWeight(edgeList, 0, index-1);
 
     /*
-    // DEBUG 
+    // DEBUG
     for(i = 0; i < sizeCDA(edgeList); i++)
     {
         EDGE *walk = ((EDGE*)getCDA(edgeList, i));
@@ -289,6 +336,7 @@ int main(int argc, char **argv)
         {
                 insertCDAback(MST, e);
                 insertCDAback(fromVertex->edgeList, e);
+                insertCDAback(toVertex->edgeList, e);
                 unionSET(adjacencyForest, toIndex, fromIndex);
         }
     }
@@ -332,19 +380,28 @@ int main(int argc, char **argv)
             printf("%d : %d", level++, walk->from);
             printf("\n%d :", level++);
 
-            quicksortOrigin(v->edgeList, 0, sizeCDA(v->edgeList)-1);
-
-            enqueue(treeVertices, NULL);
             for(i = 0; i < sizeCDA(v->edgeList); i++)
             {
                 walk = ((EDGE*)getCDA(v->edgeList, i));
+                if(walk->to == v->val)
+                    reverseEdge(walk);
+            }
+            quicksortTermination(v->edgeList, 0, sizeCDA(v->edgeList)-1);
+
+            enqueue(treeVertices, NULL);
+            // loop through v's edge list
+            for(i = 0; i < sizeCDA(v->edgeList); i++)
+            {
+                walk = ((EDGE*)getCDA(v->edgeList, i));
+                if(walk->visited == 1)
+                    continue;
                 searchVertex->val = walk->to;
                 toVertex = findRBT(vertexList, searchVertex);
                 enqueue(treeVertices, toVertex);
 
                 printf(" %d(%d)%d", walk->to, walk->from, walk->weight);
-                weight += ((EDGE*)getCDA(MST, i))->weight;
-
+                weight += walk->weight;
+                walk->visited = 1;
             }
 
             while(sizeQUEUE(treeVertices) > 0)
@@ -360,11 +417,30 @@ int main(int argc, char **argv)
                     continue;
                 }
 
-                quicksortOrigin(v->edgeList, 0, sizeCDA(v->edgeList)-1);
+                for(i = 0; i < sizeCDA(v->edgeList); i++)
+                {
+                    walk = ((EDGE*)getCDA(v->edgeList, i));
+                    if(walk->to == v->val)
+                        reverseEdge(walk);
+                }
+                quicksortTermination(v->edgeList, 0, sizeCDA(v->edgeList)-1);
+                /*
+                printf("Printing sorted list\n");
+                for(i = 0; i < sizeCDA(v->edgeList); i++)
+                {
+                    walk = ((EDGE*)getCDA(v->edgeList, i));
+                    printf(" %d(%d)%d", walk->to, walk->from, walk->weight);
+                }
+                printf("\nDone sorted list\n");
+                */
 
                 for(i = 0; i < sizeCDA(v->edgeList); i++)
                 {
                     walk = ((EDGE*)getCDA(v->edgeList, i));
+                    if(walk->visited == 1)
+                        continue;
+                    if(walk->to == v->val)
+                        reverseEdge(walk);
                     searchVertex->val = walk->to;
                     toVertex = findRBT(vertexList, searchVertex);
                     enqueue(treeVertices, toVertex);
@@ -375,7 +451,8 @@ int main(int argc, char **argv)
                         printf("\n%d :", level++);
                     }
                     printf(" %d(%d)%d", walk->to, walk->from, walk->weight);
-                    weight += ((EDGE*)getCDA(MST, i))->weight;
+                    weight += walk->weight;
+                    walk->visited = 1;
 
                 }
             }
